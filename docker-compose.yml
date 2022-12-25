@@ -7,6 +7,7 @@ services:
     environment:
       REST_PORT: "8000"
       JWT_SECRET_KEY: "jwt_secret_key"
+      AUTHENTICATION_SERVICE_ADDRESS: "172.18.0.2:8002"
     ports:
       - "8000:8000"
     networks:
