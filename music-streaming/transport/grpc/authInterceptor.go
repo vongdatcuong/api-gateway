@@ -56,10 +56,6 @@ func (interceptor *AuthInterceptor) authorize(ctx context.Context, authHeader []
 		return err, 1
 	}
 
-	if err != nil {
-		return err, 1
-	}
-
 	if res == nil || res.IsAuthenticated == nil || !*res.IsAuthenticated {
 		return fmt.Errorf("invalid token"), 403
 	}
