@@ -75,7 +75,7 @@ func (h *Handler) RunRestServer(port string, channel chan error, authenticationA
 		return
 	}
 
-	logrus.Infof("API Gateway is about to Listen on port: %d", port)
+	logrus.Infof("API Gateway is about to Listen on port: %s", port)
 	restLis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		channel <- fmt.Errorf("could not listen on port %s: %w", port, err)
