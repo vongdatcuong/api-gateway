@@ -76,3 +76,7 @@ func parseAuthorizationHeader(values []string) (string, error) {
 
 	return authHeaderParts[1], nil
 }
+
+/*TODO Next Step
+1. Find way to pass accessToken from incoming interceptor to grpc handler -> Every grpc.Dial to other services will have to pass along this token
+2. Improve the connection pool interceptor above*/

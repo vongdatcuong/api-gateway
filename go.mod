@@ -2,7 +2,7 @@ module github.com/vongdatcuong/api-gateway
 
 go 1.19
 
-require github.com/vongdatcuong/music-streaming-protos v0.0.6
+require github.com/vongdatcuong/music-streaming-protos v0.0.8
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

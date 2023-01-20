@@ -75,6 +75,14 @@ func (h *Handler) RunRestServer(port string, channel chan error, authenticationA
 		return
 	}
 
+	// Register Genre service
+	err = grpcPbV1.RegisterGenreServiceHandlerFromEndpoint(muxCtx, gwmux, musicAddress, []grpc.DialOption{grpc.WithInsecure()})
+
+	if err != nil {
+		channel <- fmt.Errorf("Failed to register Genre Rest endpoints: %w", err)
+		return
+	}
+
 	logrus.Infof("API Gateway is about to Listen on port: %s", port)
 	restLis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
