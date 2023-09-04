@@ -1,0 +1,160 @@
+1. docker-compose
+
+version: "3.8"
+
+services:
+# Gateway
+  gateway:
+    build: ./api-gateway
+    container_name: "api-gateway"
+    environment:
+      REST_PORT: "8000"
+      JWT_SECRET_KEY: "jwt_secret_key"
+      AUTHENTICATION_SERVICE_ADDRESS: "music-streaming-authentication-service:8002"
+      MUSIC_SERVICE_ADDRESS: "music-streaming-music-service:8001"
+    ports:
+      - "8000:8000"
+    networks:
+      - fullstack
+# Music
+  music-db:
+    image: mysql:8.0.31
+    container_name: "music-streaming-music-db"
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=music-db
+      - MYSQL_USER=music-streaming-music
+      - MYSQL_PASSWORD=music-streaming-music-mysql
+      - MYSQL_DATABASE=music-streaming-music
+      - MYSQL_ROOT_HOST=%
+    networks:
+      - fullstack
+    volumes:
+      - database_mysql:/var/lib/mysql
+
+  music-service:
+    build: ./music-streaming-music
+    container_name: "music-streaming-music-service"
+    environment:
+      DB_USERNAME: "music-streaming-music"
+      DB_PASSWORD: "music-streaming-music-mysql"
+      DB_DB: "music-streaming-music"
+      DB_HOST: "music-streaming-music-db"
+      DB_PORT: "3306"
+      GRPC_PORT: "8001"
+      REST_PORT: "8011"
+      EXPOSED_STORAGE_PREFIX: "/s"
+      INTERNAL_STORAGE_PREFIX: "./storage"
+      JWT_SECRET_KEY: "jwt_secret_key"
+      AUTHENTICATION_SERVICE_ADDRESS: "music-streaming-authentication-service:8002"
+      CLOUDINARY_CLOUD_NAME: "dsovo6hrj"
+      CLOUDINARY_API_KEY: "687654278988224"
+      CLOUDINARY_API_SECRET: "G3jlJDgyMkhpzShjlu9Ubgaenr0"
+    ports:
+      - "8001:8001"
+      - "8011:8011"
+    depends_on:
+      - music-db
+    networks:
+      - fullstack
+# Authentication
+  authentication-db:
+      image: mysql:8.0.31
+      container_name: "music-streaming-authentication-db"
+      restart: always
+      ports:
+        - "3307:3306"
+      environment:
+        - MYSQL_ROOT_PASSWORD=authentication-db
+        - MYSQL_USER=music-streaming-authentication
+        - MYSQL_PASSWORD=music-streaming-authentication-mysql
+        - MYSQL_DATABASE=music-streaming-authentication
+        - MYSQL_ROOT_HOST=%
+        - MYSQL_TCP_PORT=3307
+      networks:
+        - fullstack
+      volumes:
+        - database_mysql_2:/var/lib/mysql
+
+  authentication-service:
+    build: ./music-streaming-authentication
+    container_name: "music-streaming-authentication-service"
+    environment:
+      DB_USERNAME: "music-streaming-authentication"
+      DB_PASSWORD: "music-streaming-authentication-mysql"
+      DB_DB: "music-streaming-authentication"
+      DB_HOST: "music-streaming-authentication-db"
+      DB_PORT: "3307"
+      GRPC_PORT: "8002"
+      REST_PORT: "8012"
+      JWT_SECRET_KEY: "jwt_secret_key"
+      BCRYPT_SALT_ROUNDS: "5"
+    ports:
+      - "8002:8002"
+      - "8012:8012"
+    depends_on:
+      - authentication-db
+    networks:
+      - fullstack
+  #Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:3.0.1
+    ports: 
+      - "22181:22181"
+    environment: 
+      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - fullstack
+  kafka:
+    image: confluentinc/cp-kafka:3.0.1
+    depends_on:
+      - zookeeper
+    ports:
+      - 19092:19092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:22181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092 # OR ${MY_IP} Not too sure about this. TODO: figure out
+    networks:
+      - fullstack
+
+
+volumes:
+  database_mysql:
+  database_mysql_2:
+
+networks:
+  fullstack:
+    driver: bridge
+
+
+
+
+2. Makefile
+start:
+	docker-compose up --build
+start-gateway:
+	docker-compose up --build gateway -d
+start-music-service:
+	docker-compose up --build music-service  -d
+start-music-db:
+	docker-compose up music-db -d
+start-authentication-service:
+	docker-compose up --build authentication-service -d
+start-authentication-db:
+	docker-compose up authentication-db -d
+start-zookeerp:
+	docker-compose up zookeeper -d
+start-kafka:
+	docker-compose up --build kafka -d MY_IP=127.0.0.1 
+down:
+	docker-compose down -v
+remove:
+	docker-compose rm -fsv
+prune:
+	docker image prune -f
+export_go_path:
+	export GO_PATH=~/go && export PATH=$PATH:/$GO_PATH/bin

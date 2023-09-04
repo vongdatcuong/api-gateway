@@ -25,7 +25,12 @@ func (interceptor *AuthInterceptor) HttpMiddleware(next http.Handler) http.Handl
 		err, errCode := interceptor.authorize(r.Context(), r.Header["Authorization"], r.URL.Path, HttpEndPointNoAuthentication)
 
 		if err != nil {
-			sendErrorResponse(w, http.StatusInternalServerError, errCode, err.Error())
+			if errCode == 1 {
+				sendErrorResponse(w, http.StatusInternalServerError, errCode, err.Error())
+			} else {
+				sendErrorResponse(w, int(errCode), errCode, err.Error())
+			}
+
 			return
 		}
 
@@ -41,23 +46,23 @@ func (interceptor *AuthInterceptor) authorize(ctx context.Context, authHeader []
 	accessToken, err := parseAuthorizationHeader(authHeader)
 
 	if err != nil {
-		return err, 1
+		return err, uint32(ERROR_CODE_UNAUTHORIZED)
 	}
 
 	claims, err := interceptor.jwtService.ValidateToken(accessToken)
 
 	if err != nil {
-		return err, 1
+		return err, uint32(ERROR_CODE_UNAUTHORIZED)
 	}
 
 	res, err := interceptor.connectionPool.UserClient.Authenticate(ctx, &grpcPbV1.AuthenticateRequest{UserId: claims.UserID})
 
 	if err != nil {
-		return err, 1
+		return err, uint32(ERROR_CODE_UNAUTHORIZED)
 	}
 
 	if res == nil || res.IsAuthenticated == nil || !*res.IsAuthenticated {
-		return fmt.Errorf("invalid token"), 403
+		return fmt.Errorf("invalid token"), uint32(ERROR_CODE_UNAUTHORIZED)
 	}
 
 	return nil, 0
